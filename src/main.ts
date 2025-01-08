@@ -1,8 +1,10 @@
 import StreamingAvatar, {
   AvatarQuality,
   StreamingEvents,
+  TaskType,
 } from "@heygen/streaming-avatar";
 import { fetchAccessToken } from "./service/heygen";
+import { OpenAIAssistant } from "./service/openai";
 
 // DOM elements
 const videoElement = document.getElementById("avatarVideo") as HTMLVideoElement;
@@ -15,25 +17,37 @@ const userInput = document.getElementById("userInput") as HTMLInputElement;
 
 let avatar: StreamingAvatar | null = null;
 let sessionData: any = null;
+let openaiAssistant: OpenAIAssistant | null = null;
 
 // Initialize streaming avatar session
 async function initializeAvatarSession() {
-  const token = await fetchAccessToken();
-  avatar = new StreamingAvatar({ token });
-
-  sessionData = await avatar.createStartAvatar({
-    quality: AvatarQuality.High,
-    avatarName: "default",
-  });
-
-  console.log("Session data:", sessionData);
-
-  // Enable end button and disable start button
-  endButton.disabled = false;
+  // Disable start button immediately to prevent double clicks
   startButton.disabled = true;
+  try {
+    const token = await fetchAccessToken();
+    avatar = new StreamingAvatar({ token });
+    // Initialize OpenAI Assistant
+    const openaiApiKey = import.meta.env.VITE_OPENAI_API_KEY;
+    openaiAssistant = new OpenAIAssistant(openaiApiKey);
+    await openaiAssistant.initialize();
 
-  avatar.on(StreamingEvents.STREAM_READY, handleStreamReady);
-  avatar.on(StreamingEvents.STREAM_DISCONNECTED, handleStreamDisconnected);
+    sessionData = await avatar.createStartAvatar({
+      quality: AvatarQuality.Medium,
+      avatarName: "default",
+      language: "English",
+    });
+    console.log("Session data:", sessionData);
+
+    // Enable end button and disable start button
+    endButton.disabled = false;
+    startButton.disabled = true;
+    avatar.on(StreamingEvents.STREAM_READY, handleStreamReady);
+    avatar.on(StreamingEvents.STREAM_DISCONNECTED, handleStreamDisconnected);
+  } catch (error) {
+    console.error("Failed to initialize avatar session:", error);
+    // Re-enable start button if initialization fails
+    startButton.disabled = false;
+  }
 }
 
 // Handle when avatar stream is ready
@@ -71,10 +85,16 @@ async function terminateAvatarSession() {
 
 // Handle speaking event
 async function handleSpeak() {
-  if (avatar && userInput.value) {
-    await avatar.speak({
-      text: userInput.value,
-    });
+  if (avatar && openaiAssistant && userInput.value) {
+    try {
+      const response = await openaiAssistant.getResponse(userInput.value);
+      await avatar.speak({
+        text: response,
+        taskType: TaskType.REPEAT,
+      });
+    } catch (error) {
+      console.error("Error getting response:", error);
+    }
     userInput.value = ""; // Clear input after speaking
   }
 }
