@@ -10,7 +10,7 @@ const port = 3000;
 
 app.get('/api/get-access-token', async (_, res) => {
   try {
-    const apiKey = process.env.HEYGEN_API_KEY;
+    const apiKey = process.env.VITE_HEYGEN_API_KEY;
 
     if (!apiKey) {
       throw new Error('API key is missing');
