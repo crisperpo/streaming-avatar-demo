@@ -3,6 +3,7 @@ import StreamingAvatar, {
   StreamingEvents,
   TaskType,
 } from "@heygen/streaming-avatar";
+import { AudioRecorder } from './lib/audioHandler';
 import { fetchAccessToken } from "./service/heygen";
 import { OpenAIAssistant } from "./service/openai";
 
@@ -14,10 +15,14 @@ const startButton = document.getElementById(
 const endButton = document.getElementById("endSession") as HTMLButtonElement;
 const speakButton = document.getElementById("speakButton") as HTMLButtonElement;
 const userInput = document.getElementById("userInput") as HTMLInputElement;
+const recordButton = document.getElementById("recordButton") as HTMLButtonElement;
+const recordingStatus = document.getElementById("recordingStatus") as HTMLParagraphElement;
 
 let avatar: StreamingAvatar | null = null;
 let sessionData: any = null;
 let openaiAssistant: OpenAIAssistant | null = null;
+let audioRecorder: AudioRecorder | null = null;
+let isRecording = false;
 
 // Initialize streaming avatar session
 async function initializeAvatarSession() {
@@ -99,7 +104,45 @@ async function handleSpeak() {
   }
 }
 
+// Add this function to handle speaking text
+async function speakText(text: string) {
+  if (avatar && text) {
+      await avatar.speak({
+          text: text,
+      });
+  }
+}
+
+// Add these functions for audio recording
+function initializeAudioRecorder() {
+  audioRecorder = new AudioRecorder(
+      (status) => {
+          recordingStatus.textContent = status;
+      },
+      (text) => {
+          speakText(text);
+      }
+  );
+}
+
+async function toggleRecording() {
+  if (!audioRecorder) {
+      initializeAudioRecorder();
+  }
+
+  if (!isRecording) {
+      recordButton.textContent = "Stop Recording";
+      await audioRecorder?.startRecording();
+      isRecording = true;
+  } else {
+      recordButton.textContent = "Start Recording";
+      audioRecorder?.stopRecording();
+      isRecording = false;
+  }
+}
+
 // Event listeners for buttons
 startButton.addEventListener("click", initializeAvatarSession);
 endButton.addEventListener("click", terminateAvatarSession);
 speakButton.addEventListener("click", handleSpeak);
+recordButton.addEventListener("click", toggleRecording);
