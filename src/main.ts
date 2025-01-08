@@ -2,6 +2,7 @@ import StreamingAvatar, {
   AvatarQuality,
   StreamingEvents,
 } from "@heygen/streaming-avatar";
+import { fetchAccessToken } from "./service/heygen";
 
 // DOM elements
 const videoElement = document.getElementById("avatarVideo") as HTMLVideoElement;
@@ -14,33 +15,6 @@ const userInput = document.getElementById("userInput") as HTMLInputElement;
 
 let avatar: StreamingAvatar | null = null;
 let sessionData: any = null;
-
-function fetchAccessToken() {
-  return fetch('http://localhost:3000/api/get-access-token', { method: 'GET' })
-    .then((response) => {
-      if (response.ok) {
-        // Check if the response content-type is JSON
-        if (response.headers.get('content-type')?.includes('application/json')) {
-          return response.json(); // Parse the response as JSON
-        } else {
-          return response.text().then((text) => {
-            throw new Error(`Unexpected response format: ${text}`);
-          });
-        }
-      } else {
-        throw new Error(`Failed to fetch token: ${response.status} ${response.statusText}`);
-      }
-    })
-    .then((data) => {
-      console.log('Token:', data.token);
-      return data.token; // Return the token
-    })
-    .catch((error) => {
-      console.error('Error fetching access token:', error.message);
-      throw error; // Re-throw the error for further handling
-    });
-}
-
 
 // Initialize streaming avatar session
 async function initializeAvatarSession() {
