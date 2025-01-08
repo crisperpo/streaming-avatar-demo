@@ -1,6 +1,6 @@
 export async function fetchAccessToken() {
-    const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
-    return fetch(`http://localhost:3000/api/get-access-token`, { method: 'GET' })
+    const apiUrl = `${import.meta.env.VITE_API_BASE_URL}/api/get-access-token`;
+    return fetch(apiUrl, { method: 'GET' })
         .then((response) => {
             if (response.ok) {
                 // Check if the response content-type is JSON
