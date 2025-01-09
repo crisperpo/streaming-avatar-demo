@@ -18,6 +18,7 @@ const userInput = document.getElementById("userInput") as HTMLInputElement;
 const recordButton = document.getElementById("recordButton") as HTMLButtonElement;
 const recordingStatus = document.getElementById("recordingStatus") as HTMLParagraphElement;
 const promptInput = document.getElementById("promptInput") as HTMLInputElement;
+const voiceStatus = document.getElementById("voiceStatus") as HTMLElement;
 
 let avatar: StreamingAvatar | null = null;
 let sessionData: any = null;
@@ -32,6 +33,7 @@ async function initializeAvatarSession() {
   try {
     const token = await fetchAccessToken();
     avatar = new StreamingAvatar({ token });
+
     // Initialize OpenAI Assistant
     const openaiApiKey = import.meta.env.VITE_OPENAI_API_KEY;
     openaiAssistant = new OpenAIAssistant(openaiApiKey);
@@ -40,15 +42,30 @@ async function initializeAvatarSession() {
     sessionData = await avatar.createStartAvatar({
       quality: AvatarQuality.Medium,
       avatarName: "default",
-      language: "English",
+      language: "en",
     });
     console.log("Session data:", sessionData);
 
     // Enable end button and disable start button
     endButton.disabled = false;
     startButton.disabled = true;
+
+    // Add voice chat event listeners
     avatar.on(StreamingEvents.STREAM_READY, handleStreamReady);
     avatar.on(StreamingEvents.STREAM_DISCONNECTED, handleStreamDisconnected);
+    avatar.on(StreamingEvents.USER_START, () => {
+      voiceStatus.textContent = "Listening...";
+    });
+    avatar.on(StreamingEvents.USER_STOP, () => {
+      voiceStatus.textContent = "Processing...";
+    });
+    avatar.on(StreamingEvents.AVATAR_START_TALKING, () => {
+      voiceStatus.textContent = "Avatar is speaking...";
+    });
+    avatar.on(StreamingEvents.AVATAR_STOP_TALKING, () => {
+      voiceStatus.textContent = "Waiting for you to speak...";
+    });
+
   } catch (error) {
     console.error("Failed to initialize avatar session:", error);
     // Re-enable start button if initialization fails
@@ -56,8 +73,22 @@ async function initializeAvatarSession() {
   }
 }
 
+// async function startVoiceChat() {
+//   if (!avatar) return;
+
+//   try {
+//     await avatar.startVoiceChat({
+//       useSilencePrompt: false
+//     });
+//     voiceStatus.textContent = "Waiting for you to speak...";
+//   } catch (error) {
+//     console.error("Error starting voice chat:", error);
+//     voiceStatus.textContent = "Error starting voice chat";
+//   }
+// }
+
 // Handle when avatar stream is ready
-function handleStreamReady(event: any) {
+async function handleStreamReady(event: any) {
   if (event.detail && videoElement) {
     videoElement.srcObject = event.detail;
     videoElement.onloadedmetadata = () => {
@@ -90,10 +121,10 @@ async function terminateAvatarSession() {
 }
 
 // Handle speaking event
-async function handleSpeak() {
-  if (avatar && openaiAssistant && userInput.value) {
+async function handleSpeak(textToSpeakOut: string) {
+  if (avatar && openaiAssistant && textToSpeakOut) {
     try {
-      const response = await openaiAssistant.getResponse(userInput.value);
+      const response = await openaiAssistant.getResponse(textToSpeakOut);
       console.log("!!Assistant response:", response);
       await avatar.speak({
         text: response,
@@ -106,45 +137,34 @@ async function handleSpeak() {
   }
 }
 
-// Add this function to handle speaking text
-async function speakText(text: string) {
-  if (avatar && text) {
-      await avatar.speak({
-          text: text,
-      });
-  }
-}
+// Audio recording functions
+function handleStatusChange(status: string) {
+  console.log('Audio Status:', status);
+};
 
-// Add these functions for audio recording
-function initializeAudioRecorder() {
-  audioRecorder = new AudioRecorder(
-      (status) => {
-          recordingStatus.textContent = status;
-      },
-      (text) => {
-          speakText(text);
-      }
-  );
+function handleTranscriptionComplete(transcriptText: string) {
+  handleSpeak(transcriptText);
 }
 
 async function toggleRecording() {
   if (!audioRecorder) {
-      initializeAudioRecorder();
+    console.log('Creating new AudioRecorder instance');
+    audioRecorder = new AudioRecorder(handleStatusChange, handleTranscriptionComplete);
   }
 
   if (!isRecording) {
-      recordButton.textContent = "Stop Recording";
-      await audioRecorder?.startRecording();
-      isRecording = true;
+    recordButton.textContent = "Stop Recording";
+    await audioRecorder?.startRecording();
+    isRecording = true;
   } else {
-      recordButton.textContent = "Start Recording";
-      audioRecorder?.stopRecording();
-      isRecording = false;
+    recordButton.textContent = "Start Recording";
+    audioRecorder?.stopRecording();
+    isRecording = false;
   }
 }
 
 // Event listeners for buttons
 startButton.addEventListener("click", initializeAvatarSession);
 endButton.addEventListener("click", terminateAvatarSession);
-speakButton.addEventListener("click", handleSpeak);
+speakButton.addEventListener("click", () => handleSpeak(userInput.value));
 recordButton.addEventListener("click", toggleRecording);
