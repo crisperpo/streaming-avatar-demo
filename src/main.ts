@@ -17,6 +17,7 @@ const speakButton = document.getElementById("speakButton") as HTMLButtonElement;
 const userInput = document.getElementById("userInput") as HTMLInputElement;
 const recordButton = document.getElementById("recordButton") as HTMLButtonElement;
 const recordingStatus = document.getElementById("recordingStatus") as HTMLParagraphElement;
+const promptInput = document.getElementById("promptInput") as HTMLInputElement;
 
 let avatar: StreamingAvatar | null = null;
 let sessionData: any = null;
@@ -34,7 +35,7 @@ async function initializeAvatarSession() {
     // Initialize OpenAI Assistant
     const openaiApiKey = import.meta.env.VITE_OPENAI_API_KEY;
     openaiAssistant = new OpenAIAssistant(openaiApiKey);
-    await openaiAssistant.initialize();
+    await openaiAssistant.initialize(promptInput.value && promptInput.value);
 
     sessionData = await avatar.createStartAvatar({
       quality: AvatarQuality.Medium,
@@ -93,6 +94,7 @@ async function handleSpeak() {
   if (avatar && openaiAssistant && userInput.value) {
     try {
       const response = await openaiAssistant.getResponse(userInput.value);
+      console.log("!!Assistant response:", response);
       await avatar.speak({
         text: response,
         taskType: TaskType.REPEAT,
