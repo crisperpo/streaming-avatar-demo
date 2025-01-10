@@ -20,6 +20,10 @@ const recordingStatus = document.getElementById("recordingStatus") as HTMLParagr
 const promptInput = document.getElementById("promptInput") as HTMLInputElement;
 const voiceStatus = document.getElementById("voiceStatus") as HTMLElement;
 
+const websocketInput = document.getElementById("websocketInput") as HTMLInputElement;
+const websocketButton = document.getElementById("websocketButton") as HTMLButtonElement;
+const websocketMessage = document.getElementById("websocketMessage") as HTMLParagraphElement;
+
 let avatar: StreamingAvatar | null = null;
 let sessionData: any = null;
 let openaiAssistant: OpenAIAssistant | null = null;
@@ -163,8 +167,45 @@ async function toggleRecording() {
   }
 }
 
+async function sendMessageToWebSocket() {
+  if (!socket) return;
+
+  const message = websocketInput.value;
+  if (!message) return;
+
+  socket.send(JSON.stringify({ message }));
+  websocketInput.value = "";
+}
+
 // Event listeners for buttons
 startButton.addEventListener("click", initializeAvatarSession);
 endButton.addEventListener("click", terminateAvatarSession);
 speakButton.addEventListener("click", () => handleSpeak(userInput.value));
 recordButton.addEventListener("click", toggleRecording);
+websocketButton.addEventListener("click", sendMessageToWebSocket);
+
+
+// OpenAI WebSocket
+const socket = new WebSocket('http://localhost:3000');
+
+// When the connection is open
+socket.addEventListener('open', () => {
+  console.log('Connected to WebSocket server');
+  socket.send(JSON.stringify({ message: 'Hello from the client!' }));
+});
+
+// Listen for messages from the server
+socket.addEventListener('message', (event) => {
+  console.log('Message from server:', JSON.parse(event.data));
+  websocketMessage.textContent = JSON.parse(event.data).message;
+});
+
+// Handle connection close
+socket.addEventListener('close', () => {
+  console.log('WebSocket connection closed');
+});
+
+// Handle errors
+socket.addEventListener('error', (error) => {
+  console.error('WebSocket error:', error);
+});

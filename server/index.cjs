@@ -2,12 +2,23 @@ const dotenv = require('dotenv');
 const express = require('express');
 const axios = require('axios');
 const cors = require('cors');
+const http = require('http');
+
+const initialiseWebsocketServer = require('./openaiRealtimeWebsocket.cjs');
 
 dotenv.config({ override: true });
+
 const app = express();
 app.use(cors());
 const port = 3000;
 
+// Create an HTTP server to attach the WebSocket server
+const server = http.createServer(app);
+
+// Initialize WebSocket server
+initialiseWebsocketServer(server);
+
+// API endpoint to get an access token from Heygen API
 app.get('/api/get-access-token', async (_, res) => {
   try {
     const apiKey = process.env.VITE_HEYGEN_API_KEY;
@@ -48,6 +59,6 @@ app.get('/api/get-access-token', async (_, res) => {
   }
 });
 
-app.listen(port, () => {
+server.listen(port, () => {
   console.log(`Server running at http://localhost:${port}`);
 });
