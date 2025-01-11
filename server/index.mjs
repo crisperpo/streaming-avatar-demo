@@ -1,15 +1,15 @@
-const dotenv = require('dotenv');
-const express = require('express');
-const axios = require('axios');
-const cors = require('cors');
-const http = require('http');
-const initialiseOpenaiRealtimeWebsocket = require('./openaiRealtimeWebsocket.mjs');
-// import dotenv from 'dotenv';
-// import express from 'express';
-// import axios from 'axios';
-// import cors from 'cors';
-// import http from 'http';
-// import { initialiseOpenaiRealtimeWebsocket } from './openaiRealtimeWebsocket.js';
+// const dotenv = require('dotenv');
+// const express = require('express');
+// const axios = require('axios');
+// const cors = require('cors');
+// const http = require('http');
+// const initialiseOpenaiRealtimeWebsocket = require('./openaiRealtimeWebsocket.mjs');
+import dotenv from 'dotenv';
+import express from 'express';
+import axios from 'axios';
+import cors from 'cors';
+import http from 'http';
+import { initialiseOpenaiRealtimeWebsocket } from './openaiRealtimeWebsocket.mjs';
 
 dotenv.config({ override: true });
 

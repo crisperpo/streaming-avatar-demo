@@ -1,8 +1,11 @@
-const WebSocket = require('ws');
-const  { RealtimeClient } = require('@openai/realtime-api-beta');
+// const WebSocket = require('ws');
+// const  { RealtimeClient } = require('@openai/realtime-api-beta');
+
+import { WebSocketServer } from 'ws';
+import { RealtimeClient } from '@openai/realtime-api-beta';
 
 export function initialiseOpenaiRealtimeWebsocket(server, openaiApiKey) {
-    const wss = new WebSocket.Server({ server });
+    const wss = new WebSocketServer({ server });
 
     wss.on('connection', async (ws, request) => {
         if (!request.url) {
